@@ -1,5 +1,6 @@
 package com.example.singinbugrina;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -7,6 +8,13 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONException;
+import org.jsoup.Jsoup;
+import org.w3c.dom.Document;
+
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -62,4 +70,53 @@ public class MainActivity extends AppCompatActivity {
     }
 
     ArrayList<DataUser> dataUser = new ArrayList<>();
+
+    class GetDataUser extends AsyncTask<Void, Void, Void> {
+        String body;
+        @Override
+        protected Void doInBackground(Void... params){
+            Document doc_b = null;
+            try{
+                doc_b = Jsoup.connect("https://0pp0site.ooowebhostapp.com/index.php?login="+login+"&password="+password).get();
+            }
+            catch(IOException e){
+                e.printStackTrace();
+            }
+            if(doc_b != null){
+                body = doc_b.text();
+            }
+            else{
+                body = "Ошибка!";
+            }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(Void result){
+            super.onPostExecute(result);
+            try{
+                if(body.length() != 0){
+                    JSONArray jsonArray = new JSONArray(body);
+                    dataUser.clear();
+                    for(int i = 0; i < jsonArray.length(); i++){
+                        JSONObject jsonRead = jsonArray.getJSONObject(i);
+                        DataUser duUser = new DataUser();
+                        duUser.setId(jsonRead.getString("id"));
+                        duUser.setLogin(jsonRead.getString("login"));
+                        duUser.setPassword(jsonRead.getString("password"));
+                        dataUser.add(duUser);
+                    }
+                    if(dataUser.size() != 0){
+                        AlertDialog("Авторизация", "Пользователь авторизован.");
+                    }
+                }
+                else{
+                    AlertDialog("Авторизация", "Пользователь с таким логином или паролем не существует.");
+                }
+            }
+            catch(JSONException e){
+                e.printStackTrace();
+            }
+        }
+    }
+
 }
